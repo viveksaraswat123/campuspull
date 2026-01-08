@@ -6,6 +6,9 @@ import {
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
+const API_BASE = process.env.NODE_ENV === 'production' ? 'https://your-backend-url.onrender.com/api' : 'http://localhost:5000/api';
+const BASE_URL = process.env.NODE_ENV === 'production' ? 'https://your-backend-url.onrender.com' : 'http://localhost:5000';
+
 const AlumniKPIs = ({ stats }) => {
   const mentorshipVal = stats?.mentorshipHrs !== undefined ? stats.mentorshipHrs : 0;
   const kpiData = [
@@ -47,16 +50,16 @@ export default function AlumniDashboard({ user }) {
 
   const fetchData = async () => {
     try {
-      const profileRes = await axios.get(`http://localhost:5000/api/user/profile/${userId}`);
+      const profileRes = await axios.get(`${API_BASE}/user/profile/${userId}`);
       setAlumni(profileRes.data.user);
       setStats(profileRes.data.stats);
-      const jobsRes = await axios.get(`http://localhost:5000/api/jobs/user/${userId}`);
+      const jobsRes = await axios.get(`${API_BASE}/jobs/user/${userId}`);
       setMyJobs(jobsRes.data);
-      const alumniRes = await axios.get('http://localhost:5000/api/users/alumni');
+      const alumniRes = await axios.get(`${API_BASE}/users/alumni`);
       setAllAlumni(alumniRes.data);
-      const studentsRes = await axios.get('http://localhost:5000/api/users/students');
+      const studentsRes = await axios.get(`${API_BASE}/users/students`);
       setAllStudents(studentsRes.data);
-      const requestsRes = await axios.get(`http://localhost:5000/api/connections/requests/${userId}`);
+      const requestsRes = await axios.get(`${API_BASE}/connections/requests/${userId}`);
       setPendingRequests(requestsRes.data);
     } catch (err) { console.error("Fetch error:", err); } 
     finally { setLoading(false); }
@@ -78,7 +81,7 @@ export default function AlumniDashboard({ user }) {
       userId
     };
     try {
-      await axios.post('http://localhost:5000/api/jobs', jobData);
+      await axios.post(`${API_BASE}/jobs`, jobData);
       setIsModalOpen(false);
       fetchData();
       alert("Job Posted!");
@@ -89,7 +92,7 @@ export default function AlumniDashboard({ user }) {
     e.preventDefault();
     const formData = new FormData(e.target);
     try {
-      await axios.patch(`http://localhost:5000/api/user/profile/${userId}`, formData);
+      await axios.patch(`${API_BASE}/user/profile/${userId}`, formData);
       setIsEditingProfile(false);
       fetchData();
       alert("Profile Saved!");
@@ -98,7 +101,7 @@ export default function AlumniDashboard({ user }) {
 
   const handleAcceptRequest = async (requestId) => {
     try {
-      await axios.patch(`http://localhost:5000/api/connections/${requestId}/accept`);
+      await axios.patch(`${API_BASE}/connections/${requestId}/accept`);
       fetchData();
       alert("Request accepted!");
     } catch (err) { alert("Failed to accept"); }
@@ -106,7 +109,7 @@ export default function AlumniDashboard({ user }) {
 
   const handleRejectRequest = async (requestId) => {
     try {
-      await axios.patch(`http://localhost:5000/api/connections/${requestId}/reject`);
+      await axios.patch(`${API_BASE}/connections/${requestId}/reject`);
       fetchData();
       alert("Request rejected!");
     } catch (err) { alert("Failed to reject"); }
@@ -115,7 +118,7 @@ export default function AlumniDashboard({ user }) {
   const deleteJob = async (jobId) => {
     if(!window.confirm("Delete job?")) return;
     try {
-      await axios.delete(`http://localhost:5000/api/jobs/${jobId}`);
+      await axios.delete(`${API_BASE}/jobs/${jobId}`);
       fetchData();
     } catch (err) { alert("Delete failed"); }
   };
@@ -128,7 +131,7 @@ export default function AlumniDashboard({ user }) {
         return (
           <div className="space-y-8 animate-in fade-in duration-500">
             <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex items-center gap-6">
-              <img src={alumni?.profileImage ? `http://localhost:5000${alumni.profileImage}` : `https://api.dicebear.com/7.x/avataaars/svg?seed=${alumni?.name}`} alt="avatar" className="w-16 h-16 rounded-full" />
+              <img src={alumni?.profileImage ? `${BASE_URL}${alumni.profileImage}` : `https://api.dicebear.com/7.x/avataaars/svg?seed=${alumni?.name}`} alt="avatar" className="w-16 h-16 rounded-full" />
               <div>
                 <h2 className="text-2xl font-black italic">Welcome back, {alumni?.name}!</h2>
                 <p className="text-slate-600">{alumni?.role} at {alumni?.currentCompany}</p>
@@ -166,7 +169,7 @@ export default function AlumniDashboard({ user }) {
                 <div className="space-y-4">
                   {[...allAlumni, ...allStudents].filter(u => u._id !== userId).slice(0, 3).map(person => (
                     <div key={person._id} className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl">
-                      <img src={person.profileImage ? `http://localhost:5000${person.profileImage}` : `https://api.dicebear.com/7.x/avataaars/svg?seed=${person.name}`} alt="avatar" className="w-10 h-10 rounded-full" />
+                      <img src={person.profileImage ? `${BASE_URL}${person.profileImage}` : `https://api.dicebear.com/7.x/avataaars/svg?seed=${person.name}`} alt="avatar" className="w-10 h-10 rounded-full" />
                       <div className="flex-1">
                         <h4 className="font-black italic text-slate-800 text-sm">{person.name}</h4>
                         <p className="text-[10px] font-black text-slate-400 uppercase">{person.role} • {person.currentCompany || person.department}</p>
@@ -208,7 +211,7 @@ export default function AlumniDashboard({ user }) {
               {pendingRequests.map(request => (
                 <div key={request._id} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <img src={request.requester.profileImage ? `http://localhost:5000${request.requester.profileImage}` : `https://api.dicebear.com/7.x/avataaars/svg?seed=${request.requester.name}`} alt="avatar" className="w-12 h-12 rounded-full" />
+                    <img src={request.requester.profileImage ? `${BASE_URL}${request.requester.profileImage}` : `https://api.dicebear.com/7.x/avataaars/svg?seed=${request.requester.name}`} alt="avatar" className="w-12 h-12 rounded-full" />
                     <div>
                       <h4 className="font-black italic text-slate-800">{request.requester.name}</h4>
                       <p className="text-[10px] font-black text-slate-400 uppercase">{request.requester.role}</p>
@@ -248,7 +251,7 @@ export default function AlumniDashboard({ user }) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[...allAlumni, ...allStudents].filter(u => u._id !== userId).map(person => (
                 <div key={person._id} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4">
-                  <img src={person.profileImage ? `http://localhost:5000${person.profileImage}` : `https://api.dicebear.com/7.x/avataaars/svg?seed=${person.name}`} alt="avatar" className="w-12 h-12 rounded-full" />
+                  <img src={person.profileImage ? `${BASE_URL}${person.profileImage}` : `https://api.dicebear.com/7.x/avataaars/svg?seed=${person.name}`} alt="avatar" className="w-12 h-12 rounded-full" />
                   <div>
                     <h4 className="font-black italic text-slate-800">{person.name}</h4>
                     <p className="text-[10px] font-black text-slate-400 uppercase">{person.role} • {person.currentCompany || person.department}</p>
@@ -311,7 +314,7 @@ export default function AlumniDashboard({ user }) {
             <div className="bg-slate-50 p-8 border-b border-slate-100 flex justify-between items-center">
               <div className="flex items-center gap-6">
                 <div className="h-20 w-20 rounded-full bg-white border-4 border-white shadow-lg overflow-hidden">
-                  <img src={alumni?.profileImage ? `http://localhost:5000${alumni.profileImage}` : `https://api.dicebear.com/7.x/avataaars/svg?seed=${alumni?.name}`} alt="avatar" />
+                  <img src={alumni?.profileImage ? `${BASE_URL}${alumni.profileImage}` : `https://api.dicebear.com/7.x/avataaars/svg?seed=${alumni?.name}`} alt="avatar" />
                 </div>
                 <div>
                   <h2 className="text-2xl font-black italic">{alumni?.name}</h2>

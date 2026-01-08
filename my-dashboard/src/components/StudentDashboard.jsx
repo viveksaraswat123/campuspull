@@ -10,7 +10,8 @@ import {
   AreaChart, Area, ResponsiveContainer, PieChart, Pie, Cell, Tooltip 
 } from 'recharts';
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = process.env.NODE_ENV === 'production' ? 'https://your-backend-url.onrender.com/api' : 'http://localhost:5000/api';
+const BASE_URL = process.env.NODE_ENV === 'production' ? 'https://your-backend-url.onrender.com' : 'http://localhost:5000';
 
 export default function StudentDashboard({ user }) {
   const [activeTab, setActiveTab] = useState('Dashboard');
@@ -353,7 +354,7 @@ export default function StudentDashboard({ user }) {
             <div className="bg-slate-50 p-8 border-b border-slate-100 flex justify-between items-center">
               <div className="flex items-center gap-6">
                 <div className="h-20 w-20 rounded-full bg-white border-4 border-white shadow-lg overflow-hidden">
-                  <img src={userData.profileImage ? `http://localhost:5000${userData.profileImage}` : `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.name}`} alt="avatar" />
+                  <img src={userData.profileImage ? `${BASE_URL}${userData.profileImage}` : `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.name}`} alt="avatar" />
                 </div>
                 <div>
                   <h2 className="text-2xl font-black italic">{userData.name}</h2>
@@ -556,14 +557,17 @@ const CodingStatsSection = ({ handles }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
       <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100">
-        <h3 className="font-black text-[9px] tracking-[0.2em] uppercase opacity-40 italic mb-6">LeetCode Metrics</h3>
+        <h3 className="font-black text-[9px] tracking-[0.2em] uppercase opacity-80 italic mb-6">LeetCode Metrics</h3>
         <div className="grid grid-cols-3 gap-3">
           <StatBox label="Easy" val={stats.leetcode?.easySolved} color="text-emerald-500" />
           <StatBox label="Med" val={stats.leetcode?.mediumSolved} color="text-orange-500" />
           <StatBox label="Hard" val={stats.leetcode?.hardSolved} color="text-red-500" />
         </div>
       </div>
+      
       <div className="bg-[#1E293B] p-8 rounded-[2.5rem] text-white flex items-center justify-around shadow-lg">
+        
+        <h3 className="font-black text-[12px] tracking-[0.2em] uppercase opacity-80 italic mb-35">GitHub Stats</h3>
         <div className="text-center"><p className="text-3xl font-black italic">{stats.github?.public_repos || 0}</p><p className="text-[9px] uppercase font-bold text-slate-500 tracking-widest mt-1">Repos</p></div>
         <div className="h-10 w-px bg-white/10" />
         <div className="text-center"><p className="text-3xl font-black italic">{stats.github?.followers || 0}</p><p className="text-[9px] uppercase font-bold text-slate-500 tracking-widest mt-1">Fans</p></div>
