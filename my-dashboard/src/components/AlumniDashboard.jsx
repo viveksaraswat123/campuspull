@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
   LayoutDashboard, User, Users, Briefcase, Menu, X, Plus, 
-  Globe, Zap, LogOut, Trash2, Edit3, Save, BarChart3, Network
+  Globe, Zap, LogOut, Trash2, Edit3, Save, BarChart3, Network, Bell
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
@@ -37,6 +37,8 @@ export default function AlumniDashboard({ user }) {
   const [alumni, setAlumni] = useState(null);
   const [myJobs, setMyJobs] = useState([]);
   const [allAlumni, setAllAlumni] = useState([]);
+  const [allStudents, setAllStudents] = useState([]);
+  const [pendingRequests, setPendingRequests] = useState([]);
   const [stats, setStats] = useState({ referrals: 0, mentorshipHrs: 0, profileViews: 0, jobPosts: 0 });
   const [loading, setLoading] = useState(true);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -52,6 +54,10 @@ export default function AlumniDashboard({ user }) {
       setMyJobs(jobsRes.data);
       const alumniRes = await axios.get('http://localhost:5000/api/users/alumni');
       setAllAlumni(alumniRes.data);
+      const studentsRes = await axios.get('http://localhost:5000/api/users/students');
+      setAllStudents(studentsRes.data);
+      const requestsRes = await axios.get(`http://localhost:5000/api/connections/requests/${userId}`);
+      setPendingRequests(requestsRes.data);
     } catch (err) { console.error("Fetch error:", err); } 
     finally { setLoading(false); }
   };
@@ -88,6 +94,22 @@ export default function AlumniDashboard({ user }) {
       fetchData();
       alert("Profile Saved!");
     } catch (err) { alert("Update failed"); }
+  };
+
+  const handleAcceptRequest = async (requestId) => {
+    try {
+      await axios.patch(`http://localhost:5000/api/connections/${requestId}/accept`);
+      fetchData();
+      alert("Request accepted!");
+    } catch (err) { alert("Failed to accept"); }
+  };
+
+  const handleRejectRequest = async (requestId) => {
+    try {
+      await axios.patch(`http://localhost:5000/api/connections/${requestId}/reject`);
+      fetchData();
+      alert("Request rejected!");
+    } catch (err) { alert("Failed to reject"); }
   };
 
   const deleteJob = async (jobId) => {
@@ -142,12 +164,12 @@ export default function AlumniDashboard({ user }) {
               <div className="col-span-12 lg:col-span-6 bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
                 <h3 className="font-black text-slate-400 uppercase text-xs italic mb-4">Networking Suggestions</h3>
                 <div className="space-y-4">
-                  {allAlumni.filter(a => a._id !== userId).slice(0, 3).map(al => (
-                    <div key={al._id} className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl">
-                      <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${al.name}`} alt="avatar" className="w-10 h-10 rounded-full" />
+                  {[...allAlumni, ...allStudents].filter(u => u._id !== userId).slice(0, 3).map(person => (
+                    <div key={person._id} className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl">
+                      <img src={person.profileImage ? `http://localhost:5000${person.profileImage}` : `https://api.dicebear.com/7.x/avataaars/svg?seed=${person.name}`} alt="avatar" className="w-10 h-10 rounded-full" />
                       <div className="flex-1">
-                        <h4 className="font-black italic text-slate-800 text-sm">{al.name}</h4>
-                        <p className="text-[10px] font-black text-slate-400 uppercase">{al.role} • {al.currentCompany}</p>
+                        <h4 className="font-black italic text-slate-800 text-sm">{person.name}</h4>
+                        <p className="text-[10px] font-black text-slate-400 uppercase">{person.role} • {person.currentCompany || person.department}</p>
                       </div>
                       <button className="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-xl font-bold text-xs">Connect</button>
                     </div>
@@ -178,6 +200,30 @@ export default function AlumniDashboard({ user }) {
             </div>
           </div>
         );
+      case 'Requests':
+        return (
+          <div className="space-y-6 animate-in fade-in duration-500">
+            <h3 className="text-2xl font-black italic">Connection Requests</h3>
+            <div className="space-y-4">
+              {pendingRequests.map(request => (
+                <div key={request._id} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <img src={request.requester.profileImage ? `http://localhost:5000${request.requester.profileImage}` : `https://api.dicebear.com/7.x/avataaars/svg?seed=${request.requester.name}`} alt="avatar" className="w-12 h-12 rounded-full" />
+                    <div>
+                      <h4 className="font-black italic text-slate-800">{request.requester.name}</h4>
+                      <p className="text-[10px] font-black text-slate-400 uppercase">{request.requester.role}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => handleAcceptRequest(request._id)} className="bg-emerald-50 text-emerald-600 px-4 py-2 rounded-xl font-bold text-xs">Accept</button>
+                    <button onClick={() => handleRejectRequest(request._id)} className="bg-red-50 text-red-600 px-4 py-2 rounded-xl font-bold text-xs">Reject</button>
+                  </div>
+                </div>
+              ))}
+              {pendingRequests.length === 0 && <p className="text-slate-400 font-bold italic">No pending requests.</p>}
+            </div>
+          </div>
+        );
       case 'Referrals':
         return (
           <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
@@ -198,15 +244,15 @@ export default function AlumniDashboard({ user }) {
       case 'Networking':
         return (
           <div className="space-y-6 animate-in fade-in duration-500">
-            <h3 className="text-2xl font-black italic">Connect with Alumni</h3>
+            <h3 className="text-2xl font-black italic">Connect with Community</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {allAlumni.filter(a => a._id !== userId).map(al => (
-                <div key={al._id} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4">
-                  <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${al.name}`} alt="avatar" className="w-12 h-12 rounded-full" />
+              {[...allAlumni, ...allStudents].filter(u => u._id !== userId).map(person => (
+                <div key={person._id} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4">
+                  <img src={person.profileImage ? `http://localhost:5000${person.profileImage}` : `https://api.dicebear.com/7.x/avataaars/svg?seed=${person.name}`} alt="avatar" className="w-12 h-12 rounded-full" />
                   <div>
-                    <h4 className="font-black italic text-slate-800">{al.name}</h4>
-                    <p className="text-[10px] font-black text-slate-400 uppercase">{al.role} • {al.currentCompany}</p>
-                    <p className="text-[10px] text-slate-500">{al.location}</p>
+                    <h4 className="font-black italic text-slate-800">{person.name}</h4>
+                    <p className="text-[10px] font-black text-slate-400 uppercase">{person.role} • {person.currentCompany || person.department}</p>
+                    <p className="text-[10px] text-slate-500">{person.location}</p>
                   </div>
                   <button className="ml-auto bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl font-bold text-xs">Connect</button>
                 </div>
@@ -307,6 +353,7 @@ export default function AlumniDashboard({ user }) {
         <div className="p-8 border-b border-slate-700/30 text-xl font-black italic">CAMPUSPULL</div>
         <nav className="flex-1 p-6 space-y-2">
           <SidebarItem icon={<LayoutDashboard size={18} />} label="Dashboard" active={activeTab === 'Dashboard'} onClick={() => setActiveTab('Dashboard')} />
+          <SidebarItem icon={<Bell size={18} />} label="Requests" active={activeTab === 'Requests'} onClick={() => setActiveTab('Requests')} />
           <SidebarItem icon={<User size={18} />} label="My Profile" active={activeTab === 'Profile'} onClick={() => setActiveTab('Profile')} />
           <SidebarItem icon={<Briefcase size={18} />} label="Referrals" active={activeTab === 'Referrals'} onClick={() => setActiveTab('Referrals')} />
           <SidebarItem icon={<Network size={18} />} label="Networking" active={activeTab === 'Networking'} onClick={() => setActiveTab('Networking')} />

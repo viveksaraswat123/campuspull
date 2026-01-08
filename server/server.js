@@ -29,6 +29,15 @@ const jobSchema = new mongoose.Schema({
 });
 const Job = mongoose.model('Job', jobSchema);
 
+// --- CONNECTIONS SCHEMA ---
+const connectionSchema = new mongoose.Schema({
+  requester: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  recipient: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  status: { type: String, enum: ['pending', 'accepted', 'rejected'], default: 'pending' },
+  createdAt: { type: Date, default: Date.now }
+});
+const Connection = mongoose.model('Connection', connectionSchema);
+
 // --- ROUTES ---
 
 app.post('/api/login', async (req, res) => {
@@ -74,7 +83,11 @@ app.patch('/api/user/profile/:id', upload.single('avatar'), async (req, res) => 
       currentCompany: incoming.company, // Maps 'company' to 'currentCompany'
       graduationYear: incoming.batch,   // Maps 'batch' to 'graduationYear'
       location: incoming.location,
-      email: incoming.email
+      email: incoming.email,
+      headline: incoming.headline,
+      bio: incoming.bio,
+      leetcode: incoming.leetcode,
+      github: incoming.github
     };
 
     if (req.file) {
@@ -106,6 +119,22 @@ app.get('/api/jobs/user/:userId', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+app.get('/api/jobs/network/:userId', async (req, res) => {
+  try {
+    const connections = await Connection.find({
+      $or: [
+        { requester: req.params.userId, status: 'accepted' },
+        { recipient: req.params.userId, status: 'accepted' }
+      ]
+    });
+    const connectedUserIds = connections.map(conn => 
+      conn.requester.toString() === req.params.userId ? conn.recipient : conn.requester
+    );
+    const jobs = await Job.find({ postedBy: { $in: connectedUserIds } }).sort({ createdAt: -1 }).populate('postedBy', 'name role');
+    res.json(jobs);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 app.delete('/api/jobs/:jobId', async (req, res) => {
   try {
     await Job.findByIdAndDelete(req.params.jobId);
@@ -113,10 +142,67 @@ app.delete('/api/jobs/:jobId', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// --- CONNECTION ROUTES ---
+app.post('/api/connections', async (req, res) => {
+  try {
+    const { requesterId, recipientId } = req.body;
+    const existing = await Connection.findOne({
+      $or: [
+        { requester: requesterId, recipient: recipientId },
+        { requester: recipientId, recipient: requesterId }
+      ]
+    });
+    if (existing) return res.status(400).json({ message: 'Connection already exists' });
+    const connection = new Connection({ requester: requesterId, recipient: recipientId });
+    await connection.save();
+    res.json({ success: true, connection });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/connections/requests/:userId', async (req, res) => {
+  try {
+    const connections = await Connection.find({ recipient: req.params.userId, status: 'pending' }).populate('requester', 'name role profileImage');
+    res.json(connections);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.patch('/api/connections/:id/accept', async (req, res) => {
+  try {
+    const connection = await Connection.findByIdAndUpdate(req.params.id, { status: 'accepted' }, { new: true });
+    res.json({ success: true, connection });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.patch('/api/connections/:id/reject', async (req, res) => {
+  try {
+    const connection = await Connection.findByIdAndUpdate(req.params.id, { status: 'rejected' }, { new: true });
+    res.json({ success: true, connection });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/connections/:userId', async (req, res) => {
+  try {
+    const connections = await Connection.find({
+      $or: [
+        { requester: req.params.userId, status: 'accepted' },
+        { recipient: req.params.userId, status: 'accepted' }
+      ]
+    }).populate('requester recipient', 'name role profileImage');
+    res.json(connections);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 app.get('/api/users/alumni', async (req, res) => {
   try {
     const alumni = await User.find({ role: 'alumni' }).select('name role currentCompany graduationYear location linkedin profileImage');
     res.json(alumni);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/users/students', async (req, res) => {
+  try {
+    const students = await User.find({ role: 'student' }).select('name role department year graduationYear location linkedin profileImage');
+    res.json(students);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
