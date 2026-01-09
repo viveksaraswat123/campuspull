@@ -15,9 +15,9 @@ app.use('/uploads', express.static('uploads'));
 const upload = multer({ dest: 'uploads/' });
 
 const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/campuspull";
-mongoose.connect(MONGO_URI).then(() => console.log("🚀 MongoDB Connected"));
+mongoose.connect(MONGO_URI).then(() => console.log("MongoDB Connected"));
 
-// --- JOB SCHEMA ---
+// JOB SCHEMA 
 const jobSchema = new mongoose.Schema({
   title: String,
   company: String,
@@ -29,7 +29,7 @@ const jobSchema = new mongoose.Schema({
 });
 const Job = mongoose.model('Job', jobSchema);
 
-// --- CONNECTIONS SCHEMA ---
+// CONNECTIONS SCHEMA
 const connectionSchema = new mongoose.Schema({
   requester: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   recipient: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -38,7 +38,7 @@ const connectionSchema = new mongoose.Schema({
 });
 const Connection = mongoose.model('Connection', connectionSchema);
 
-// --- ROUTES ---
+//ROUTES
 
 app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
@@ -62,7 +62,7 @@ app.get('/api/user/profile/:id', async (req, res) => {
       const jobCount = await Job.countDocuments({ postedBy: user._id });
       stats = {
         referrals: 12, 
-        mentorshipHrs: 45, // Fix: Now explicitly defined
+        mentorshipHrs: 45, 
         profileViews: "1.2k",
         jobPosts: jobCount
       };
@@ -87,7 +87,8 @@ app.patch('/api/user/profile/:id', upload.single('avatar'), async (req, res) => 
       headline: incoming.headline,
       bio: incoming.bio,
       leetcode: incoming.leetcode,
-      github: incoming.github
+      github: incoming.github,
+      certificationLink: incoming.certificationLink
     };
 
     if (req.file) {
@@ -142,7 +143,7 @@ app.delete('/api/jobs/:jobId', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// --- CONNECTION ROUTES ---
+//CONNECTION ROUTES
 app.post('/api/connections', async (req, res) => {
   try {
     const { requesterId, recipientId } = req.body;
@@ -206,5 +207,25 @@ app.get('/api/users/students', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+//USER COLLECTIONS ENDPOINTS
+app.post('/api/user/collections/:userId/:type', async (req, res) => {
+  try {
+    const { userId, type } = req.params;
+    const data = req.body;
+    const update = { $push: { [type]: data } };
+    const user = await User.findByIdAndUpdate(userId, update, { new: true });
+    res.json({ success: true, data: user[type] });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.delete('/api/user/collections/:userId/:type/:itemId', async (req, res) => {
+  try {
+    const { userId, type, itemId } = req.params;
+    const update = { $pull: { [type]: { _id: itemId } } };
+    const user = await User.findByIdAndUpdate(userId, update, { new: true });
+    res.json({ success: true, data: user[type] });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

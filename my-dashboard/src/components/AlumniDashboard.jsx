@@ -6,8 +6,8 @@ import {
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
-const API_BASE = process.env.NODE_ENV === 'production' ? 'https://your-backend-url.onrender.com/api' : 'http://localhost:5000/api';
-const BASE_URL = process.env.NODE_ENV === 'production' ? 'https://your-backend-url.onrender.com' : 'http://localhost:5000';
+const API_BASE = process.env.NODE_ENV === 'production' ? 'https://your-render-backend-url.onrender.com/api' : 'http://localhost:5000/api';
+const BASE_URL = process.env.NODE_ENV === 'production' ? 'https://your-render-backend-url.onrender.com' : 'http://localhost:5000';
 
 const AlumniKPIs = ({ stats }) => {
   const mentorshipVal = stats?.mentorshipHrs !== undefined ? stats.mentorshipHrs : 0;
@@ -293,7 +293,7 @@ export default function AlumniDashboard({ user }) {
                 </ResponsiveContainer>
               </div>
               <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-                <h4 className="font-black text-slate-400 uppercase text-xs italic mb-4">Distribution</h4>
+                <h4 className="font-black text-slate-400 uppercase text-xs italic mb-4">Activity Distribution</h4>
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie data={pieData} cx="50%" cy="50%" outerRadius={80} dataKey="value">
@@ -332,6 +332,7 @@ export default function AlumniDashboard({ user }) {
               <EditableItem isEditing={isEditingProfile} label="Batch (Grad Year)" name="batch" value={alumni?.graduationYear} />
               <EditableItem isEditing={isEditingProfile} label="Location" name="location" value={alumni?.location} />
               <EditableItem isEditing={isEditingProfile} label="Email" name="email" value={alumni?.email} />
+              <EditableItem isEditing={isEditingProfile} label="Certification Link" name="certificationLink" value={alumni?.certificationLink} />
               {isEditingProfile && (
                 <div className="md:col-span-2 space-y-2">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Profile Picture</p>
@@ -402,6 +403,8 @@ const EditableItem = ({ label, name, value, isEditing }) => (
     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">{label}</p>
     {isEditing ? (
       <input name={name} defaultValue={value} className="w-full p-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-indigo-500 outline-none font-bold" />
+    ) : name === 'certificationLink' && value ? (
+      <a href={value} target="_blank" rel="noopener noreferrer" className="w-full p-4 bg-white border border-slate-100 rounded-2xl font-bold text-indigo-600 hover:text-indigo-800 underline block">{value}</a>
     ) : (
       <div className="w-full p-4 bg-white border border-slate-100 rounded-2xl font-bold text-slate-700">{value || <span className="text-slate-300 italic">Empty</span>}</div>
     )}

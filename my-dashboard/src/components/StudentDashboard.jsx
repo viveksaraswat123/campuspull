@@ -10,8 +10,8 @@ import {
   AreaChart, Area, ResponsiveContainer, PieChart, Pie, Cell, Tooltip 
 } from 'recharts';
 
-const API_BASE = process.env.NODE_ENV === 'production' ? 'https://your-backend-url.onrender.com/api' : 'http://localhost:5000/api';
-const BASE_URL = process.env.NODE_ENV === 'production' ? 'https://your-backend-url.onrender.com' : 'http://localhost:5000';
+const API_BASE = process.env.NODE_ENV === 'production' ? 'https://render-backend-url.onrender.com/api' : 'http://localhost:5000/api';
+const BASE_URL = process.env.NODE_ENV === 'production' ? 'https://render-backend-url.onrender.com' : 'http://localhost:5000';
 
 export default function StudentDashboard({ user }) {
   const [activeTab, setActiveTab] = useState('Dashboard');
@@ -51,7 +51,7 @@ export default function StudentDashboard({ user }) {
   const [networkJobs, setNetworkJobs] = useState([]);
   const [stats, setStats] = useState({ progress: 0, attendance: "0%", tasks: 0 });
 
-  // --- COMPUTE TECHNICAL DNA FROM DB SKILLS ---
+  //computer skills pie data
   const dynamicSkillData = useMemo(() => {
     if (!userData.skills || userData.skills.length === 0) {
       return [{ name: 'Empty', value: 100, color: '#F1F5F9' }];
@@ -122,7 +122,6 @@ export default function StudentDashboard({ user }) {
   const handleConnect = async (recipientId) => {
     try {
       await axios.post(`${API_BASE}/connections`, { requesterId: userId, recipientId });
-      // Refresh connections
       const connectionsRes = await axios.get(`${API_BASE}/connections/${userId}`);
       setMyConnections(connectionsRes.data);
       const sent = connectionsRes.data.filter(conn => conn.requester._id === userId && conn.status === 'pending');
@@ -133,7 +132,7 @@ export default function StudentDashboard({ user }) {
     }
   };
 
-  // --- HANDLERS ---
+  //HANDLERS
   const handleProfileChange = (e) => {
     const { name, value } = e.target;
     setUserData(prev => ({ ...prev, [name]: value }));
@@ -232,9 +231,9 @@ export default function StudentDashboard({ user }) {
               <CodingStatsSection handles={{ leetcode: userData.leetcode, github: userData.github }} />
             </div>
 
-            {/* TECHNICAL DNA */}
+            {/* Technical stats*/}
             <div className="col-span-12 lg:col-span-4 bg-white rounded-[2.5rem] p-6 border border-slate-100 shadow-sm">
-               <h3 className="font-black text-[#1E293B] mb-6 uppercase text-[10px] tracking-[0.2em] opacity-50 italic">Technical DNA</h3>
+               <h3 className="font-black text-[#1E293B] mb-6 uppercase text-[10px] tracking-[0.2em] opacity-50 italic">Technical Stats</h3>
                <div className="flex items-center gap-4">
                   <div className="h-32 w-32 relative shrink-0">
                     <ResponsiveContainer width="100%" height="100%">
@@ -327,7 +326,7 @@ export default function StudentDashboard({ user }) {
       case 'NetworkJobs':
         return (
           <div className="space-y-6 animate-in fade-in duration-500">
-            <h3 className="text-2xl font-black italic">Jobs from My Network</h3>
+            <h3 className="text-2xl font-black italic">Jobs from Network</h3>
             <div className="grid gap-4">
               {networkJobs.map(job => (
                 <div key={job._id} className="bg-white p-6 rounded-3xl border border-slate-100 flex justify-between items-center shadow-sm">
@@ -387,10 +386,10 @@ export default function StudentDashboard({ user }) {
 
             {/* SKILL MANAGER SECTION */}
             <div className="p-8 border-t border-slate-100">
-              <h3 className="text-xl font-black italic uppercase text-slate-400 tracking-widest mb-8">Skill Mastery</h3>
+              <h3 className="text-xl font-black italic uppercase text-slate-400 tracking-widest mb-8">Skill Section</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                 <form onSubmit={handleAddSkill} className="space-y-4">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 italic">Add Skill to DNA</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 italic">Add Skill</p>
                   <input name="sName" placeholder="Skill Name (e.g. React)" className="w-full px-6 py-4 bg-slate-50 rounded-2xl font-bold text-sm outline-none border border-transparent focus:border-indigo-100" required />
                   <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl">
                     <input name="sRating" type="range" min="10" max="100" className="flex-1 accent-indigo-600" />
@@ -437,7 +436,10 @@ export default function StudentDashboard({ user }) {
                   </div>
                   {certs.map(c => (
                     <div key={c._id} className="flex justify-between items-center p-4 bg-slate-50 rounded-2xl border border-slate-100 mb-2">
-                      <span className="font-bold text-[11px] uppercase truncate">{c.name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-[11px] uppercase truncate">{c.name}</span>
+                        {c.link && <a href={c.link} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800"><ExternalLink size={12} /></a>}
+                      </div>
                       <button onClick={() => deleteItem(c._id, 'Cert')} className="text-slate-300 hover:text-red-500"><Trash2 size={16}/></button>
                     </div>
                   ))}
@@ -499,6 +501,7 @@ export default function StudentDashboard({ user }) {
                 <>
                   <input name="provider" placeholder="Organization" className="w-full px-6 py-4 bg-slate-50 rounded-2xl font-bold text-sm outline-none" required />
                   <input name="date" placeholder="Month/Year" className="w-full px-6 py-4 bg-slate-50 rounded-2xl font-bold text-sm outline-none" />
+                  <input name="link" placeholder="Certificate Link" className="w-full px-6 py-4 bg-slate-50 rounded-2xl font-bold text-sm outline-none" />
                 </>
               )}
               <button type="submit" className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-emerald-500">Save Instance</button>
@@ -511,7 +514,7 @@ export default function StudentDashboard({ user }) {
   );
 }
 
-// --- ATOMIC UI COMPONENTS ---
+// UI COMPONENTS
 const ProjectCard = ({ title, desc, link }) => (
   <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col justify-between h-full group hover:border-indigo-200 transition-all">
     <div>
@@ -535,7 +538,10 @@ const CertCard = ({ cert }) => (
       <h4 className="font-black text-slate-800 truncate uppercase text-sm">{cert.name}</h4>
       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{cert.provider} • {cert.date}</p>
     </div>
-    <CheckCircle2 className="text-emerald-500" size={20} />
+    <div className="flex items-center gap-2">
+      {cert.link && <a href={cert.link} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800"><ExternalLink size={16} /></a>}
+      <CheckCircle2 className="text-emerald-500" size={20} />
+    </div>
   </div>
 );
 
@@ -601,6 +607,8 @@ const EditableItem = ({ label, name, value, isEditing }) => (
     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">{label}</p>
     {isEditing ? (
       <input name={name} defaultValue={value} className="w-full p-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-indigo-500 outline-none font-bold" />
+    ) : name === 'certificationLink' && value ? (
+      <a href={value} target="_blank" rel="noopener noreferrer" className="w-full p-4 bg-white border border-slate-100 rounded-2xl font-bold text-indigo-600 hover:text-indigo-800 underline block">{value}</a>
     ) : (
       <div className="w-full p-4 bg-white border border-slate-100 rounded-2xl font-bold text-slate-700">{value || <span className="text-slate-300 italic">Empty</span>}</div>
     )}

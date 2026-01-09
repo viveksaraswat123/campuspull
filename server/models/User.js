@@ -116,6 +116,7 @@ const userSchema = new mongoose.Schema({
   twitter: { type: String, default: '' }, // 🆕 Good for tech community
   portfolio: { type: String, default: '' }, // 🆕 Personal Website URL
   leetcode: { type: String, default: '' }, // 🆕 For coding enthusiasts
+  certificationLink: { type: String, default: '' }, // 🆕 Certification URL
   // --- 4. Arrays (Your features) ---
   skills: { type: [String], default: [] },
   projects: { type: [ProjectSchema], default: [] },
